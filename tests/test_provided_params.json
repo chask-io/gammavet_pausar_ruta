@@ -1,0 +1,28 @@
+{
+  "function_name": "PausarRutaFn",
+  "test_type": "provided_params",
+  "args": {
+    "nota": "Pausa de prueba"
+  },
+  "widget_params": {},
+  "prompt": "",
+  "event_type": "function_call",
+  "extra_params": {
+    "user_phone_number": "+56976025397",
+    "agent_phone_number": "1051240901403291",
+    "tool_calls": [
+      {
+        "id": "test_call_pausar_ruta",
+        "name": "PausarRutaFn",
+        "args": {
+          "nota": "Pausa de prueba"
+        }
+      }
+    ]
+  },
+  "files": [],
+  "metadata": {
+    "description": "Test PausarRutaFn with explicit params",
+    "expected_status": "success"
+  }
+}
