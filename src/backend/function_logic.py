@@ -8,8 +8,6 @@ API and acknowledge the pause over WhatsApp.
 import logging
 import os
 import re
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Any
 from uuid import UUID
 
@@ -54,8 +52,7 @@ class FunctionBackend:
         if note:
             payload["note"] = note
 
-        with _tenant_data_public_test_mode():
-            result = self._tenant_client().post(TENANT_PAUSE_DRIVER_PATH, json=payload)
+        result = self._tenant_client().post(TENANT_PAUSE_DRIVER_PATH, json=payload)
         if not isinstance(result, dict):
             raise RuntimeError("/api/gammavet/drivers/pause returned an invalid response")
 
@@ -235,16 +232,3 @@ class FunctionBackend:
             if value:
                 return value
         return None
-
-
-@contextmanager
-def _tenant_data_public_test_mode() -> Iterator[None]:
-    previous_mode = os.environ.get("MODE")
-    os.environ["MODE"] = "PRODUCTION"
-    try:
-        yield
-    finally:
-        if previous_mode is None:
-            os.environ.pop("MODE", None)
-        else:
-            os.environ["MODE"] = previous_mode
