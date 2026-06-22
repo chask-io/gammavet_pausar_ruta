@@ -81,11 +81,18 @@ class FunctionBackend:
         return client
 
     def _function_uuid(self) -> str:
-        return (
-            os.getenv("FUNCTION_UUID")
-            or os.getenv("CHASK_FUNCTION_UUID")
-            or DEFAULT_FUNCTION_UUID
-        )
+        for candidate in (
+            os.getenv("FUNCTION_UUID"),
+            os.getenv("CHASK_FUNCTION_UUID"),
+            DEFAULT_FUNCTION_UUID,
+        ):
+            if not candidate:
+                continue
+            try:
+                return str(UUID(str(candidate)))
+            except (TypeError, ValueError):
+                logger.warning("Ignoring non-UUID function identifier from environment")
+        return DEFAULT_FUNCTION_UUID
 
     def _build_driver_payload(self) -> dict[str, Any]:
         event_uuid = self._event_uuid()
