@@ -124,3 +124,17 @@ def test_pausar_ruta_prefers_explicit_driver_id(monkeypatch):
     payload = tenant.calls[0]["json"]
     assert payload["driver_id"] == "aaaaaaaa-1111-4111-8111-111111111111"
     assert "action" not in payload
+
+
+def test_publish_test_mock_does_not_mutate_or_send(monkeypatch):
+    tenant = FakeTenantClient()
+    orchestrator = FakeOrchestrator()
+    backend = FunctionBackend(_event(extra_params={"chask_publish_test_mock": True}))
+    monkeypatch.setattr(backend, "_tenant_client", lambda: tenant)
+    monkeypatch.setattr("backend.function_logic.orchestrator_api_manager", orchestrator)
+
+    result = backend.process_request()
+
+    assert "modo prueba" in result
+    assert tenant.calls == []
+    assert orchestrator.calls == []

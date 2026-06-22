@@ -52,6 +52,11 @@ class FunctionBackend:
         if note:
             payload["note"] = note
 
+        if self._is_publish_test_mock():
+            driver_ref = payload.get("driver_id") or payload.get("driver_phone")
+            logger.info("PausarRutaFn publish-test mock for driver=%s", driver_ref)
+            return f"Conductor {driver_ref} pausado en modo prueba no mutante."
+
         result = self._tenant_client().post(TENANT_PAUSE_DRIVER_PATH, json=payload)
         if not isinstance(result, dict):
             raise RuntimeError("/api/gammavet/drivers/pause returned an invalid response")
@@ -225,6 +230,13 @@ class FunctionBackend:
             return {}
         args = tool_calls[0].get("args", {}) or {}
         return args if isinstance(args, dict) else {}
+
+    def _is_publish_test_mock(self) -> bool:
+        extra_params = self.orchestration_event.extra_params or {}
+        return bool(
+            extra_params.get("chask_publish_test_mock")
+            or extra_params.get("non_mutating_test")
+        )
 
     def _first_value(self, data: dict[str, Any], *keys: str) -> Any:
         for key in keys:
