@@ -28,6 +28,7 @@ ACTOR_LAMBDA = "gammavet_pausar_ruta"
 BOT_PHONE_ID = "1051240901403291"
 DEFAULT_TENANT_BRANCH = "test"
 DEFAULT_TENANT_SLUG = "chask"
+DEFAULT_FUNCTION_UUID = "777b3057-515c-4cb3-80e0-076a126466c1"
 TENANT_PAUSE_DRIVER_PATH = "gammavet/drivers/pause"
 PAUSE_ACK = (
     "Ok, vamos a entrar en una pausa. Cuando quieras volver a operar, "
@@ -80,7 +81,11 @@ class FunctionBackend:
         return client
 
     def _function_uuid(self) -> str:
-        return os.getenv("FUNCTION_UUID") or os.getenv("CHASK_FUNCTION_UUID") or ""
+        return (
+            os.getenv("FUNCTION_UUID")
+            or os.getenv("CHASK_FUNCTION_UUID")
+            or DEFAULT_FUNCTION_UUID
+        )
 
     def _build_driver_payload(self) -> dict[str, Any]:
         event_uuid = self._event_uuid()
