@@ -81,8 +81,8 @@ def test_pausar_ruta_posts_pause_and_sends_one_ack(monkeypatch):
     tenant = FakeTenantClient()
     orchestrator = FakeOrchestrator()
     backend = FunctionBackend(_event())
-    monkeypatch.setattr(backend, "_tenant_client", lambda: tenant)
-    monkeypatch.setattr("backend.function_logic.orchestrator_api_manager", orchestrator)
+    monkeypatch.setattr(backend.context, "tenant_client", lambda: tenant)
+    monkeypatch.setattr("backend.conductor_common.orchestrator_api_manager", orchestrator)
 
     result = backend.process_request()
 
@@ -116,8 +116,8 @@ def test_pausar_ruta_posts_pause_and_sends_one_ack(monkeypatch):
 def test_pausar_ruta_prefers_explicit_driver_id(monkeypatch):
     tenant = FakeTenantClient()
     backend = FunctionBackend(_event(args={"driver_id": "aaaaaaaa-1111-4111-8111-111111111111"}))
-    monkeypatch.setattr(backend, "_tenant_client", lambda: tenant)
-    monkeypatch.setattr("backend.function_logic.orchestrator_api_manager", FakeOrchestrator())
+    monkeypatch.setattr(backend.context, "tenant_client", lambda: tenant)
+    monkeypatch.setattr("backend.conductor_common.orchestrator_api_manager", FakeOrchestrator())
 
     backend.process_request()
 
@@ -130,8 +130,8 @@ def test_publish_test_mock_does_not_mutate_or_send(monkeypatch):
     tenant = FakeTenantClient()
     orchestrator = FakeOrchestrator()
     backend = FunctionBackend(_event(extra_params={"chask_publish_test_mock": True}))
-    monkeypatch.setattr(backend, "_tenant_client", lambda: tenant)
-    monkeypatch.setattr("backend.function_logic.orchestrator_api_manager", orchestrator)
+    monkeypatch.setattr(backend.context, "tenant_client", lambda: tenant)
+    monkeypatch.setattr("backend.conductor_common.orchestrator_api_manager", orchestrator)
 
     result = backend.process_request()
 
