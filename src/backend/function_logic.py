@@ -25,7 +25,8 @@ logger.setLevel(logging.INFO)
 ACTOR_LAMBDA = "gammavet_pausar_ruta"
 BOT_PHONE_ID = "1051240901403291"
 DEFAULT_TENANT_BRANCH = "test"
-DEFAULT_TENANT_SLUG = "chask"
+DEV_TENANT_SLUG = "chask"
+PROD_TENANT_SLUG = "gammavet"
 DEFAULT_FUNCTION_UUID = "777b3057-515c-4cb3-80e0-076a126466c1"
 TENANT_PAUSE_DRIVER_PATH = "gammavet/drivers/pause"
 PAUSE_ACK = (
@@ -67,10 +68,21 @@ class FunctionBackend:
         return f"Conductor {driver_ref} pausado. Mensaje de pausa enviado."
 
     def _tenant_client(self) -> TenantDataClient:
-        branch = (
-            os.environ.get("TENANT_BRANCH")
-            or os.environ.get("CHASK_TENANT_BRANCH")
-            or DEFAULT_TENANT_BRANCH
+        explicit_branch = os.environ.get("TENANT_BRANCH") or os.environ.get("CHASK_TENANT_BRANCH")
+        base_url_hint = os.environ.get("CHASK_API_BASE_URL") or os.environ.get("BASE_DOMAIN", "")
+        if explicit_branch:
+            branch = explicit_branch
+        elif "app.chask.it" in base_url_hint:
+            branch = DEFAULT_TENANT_BRANCH
+        else:
+            branch = getattr(self.orchestration_event, "branch", None) or DEFAULT_TENANT_BRANCH
+        slug = self._tenant_slug(branch=branch, base_url_hint=base_url_hint)
+        logger.info(
+            "TenantDataClient config branch=%s slug=%s lambda_uuid=%s access_token_present=%s",
+            branch,
+            slug,
+            self._function_uuid(),
+            bool(getattr(self.orchestration_event, "access_token", None)),
         )
         client = TenantDataClient(
             org_uuid=self.orchestration_event.organization.organization_id,
@@ -78,8 +90,18 @@ class FunctionBackend:
             lambda_uuid=self._function_uuid(),
             access_token=getattr(self.orchestration_event, "access_token", None),
         )
-        client._slug = os.environ.get("TENANT_SLUG") or DEFAULT_TENANT_SLUG
+        client._slug = slug
         return client
+
+    def _tenant_slug(self, *, branch: str, base_url_hint: str = "") -> str:
+        explicit_slug = os.environ.get("TENANT_SLUG") or os.environ.get("CHASK_TENANT_SLUG")
+        if explicit_slug:
+            return explicit_slug
+        if "app.chask.it" in base_url_hint:
+            return DEV_TENANT_SLUG
+        if str(branch).lower() == "prod":
+            return PROD_TENANT_SLUG
+        return DEV_TENANT_SLUG
 
     def _function_uuid(self) -> str:
         return DEFAULT_FUNCTION_UUID
