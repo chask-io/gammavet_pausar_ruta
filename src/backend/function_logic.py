@@ -53,6 +53,7 @@ class FunctionBackend:
         if note:
             payload["note"] = note
 
+        self._log_tenant_data_config()
         if self._is_publish_test_mock():
             driver_ref = payload.get("driver_id") or payload.get("driver_phone")
             logger.info("PausarRutaFn publish-test mock for driver=%s", driver_ref)
@@ -68,6 +69,18 @@ class FunctionBackend:
         return f"Conductor {driver_ref} pausado. Mensaje de pausa enviado."
 
     def _tenant_client(self) -> TenantDataClient:
+        branch, slug = self._tenant_routing_config()
+        self._log_tenant_data_config(branch=branch, slug=slug)
+        client = TenantDataClient(
+            org_uuid=self.orchestration_event.organization.organization_id,
+            branch=branch,
+            lambda_uuid=self._function_uuid(),
+            access_token=getattr(self.orchestration_event, "access_token", None),
+        )
+        client._slug = slug
+        return client
+
+    def _tenant_routing_config(self) -> tuple[str, str]:
         explicit_branch = os.environ.get("TENANT_BRANCH") or os.environ.get("CHASK_TENANT_BRANCH")
         base_url_hint = os.environ.get("CHASK_API_BASE_URL") or os.environ.get("BASE_DOMAIN", "")
         if explicit_branch:
@@ -77,6 +90,16 @@ class FunctionBackend:
         else:
             branch = getattr(self.orchestration_event, "branch", None) or DEFAULT_TENANT_BRANCH
         slug = self._tenant_slug(branch=branch, base_url_hint=base_url_hint)
+        return branch, slug
+
+    def _log_tenant_data_config(
+        self,
+        *,
+        branch: str | None = None,
+        slug: str | None = None,
+    ) -> None:
+        if branch is None or slug is None:
+            branch, slug = self._tenant_routing_config()
         logger.info(
             "TenantDataClient config branch=%s slug=%s lambda_uuid=%s access_token_present=%s",
             branch,
@@ -84,14 +107,6 @@ class FunctionBackend:
             self._function_uuid(),
             bool(getattr(self.orchestration_event, "access_token", None)),
         )
-        client = TenantDataClient(
-            org_uuid=self.orchestration_event.organization.organization_id,
-            branch=branch,
-            lambda_uuid=self._function_uuid(),
-            access_token=getattr(self.orchestration_event, "access_token", None),
-        )
-        client._slug = slug
-        return client
 
     def _tenant_slug(self, *, branch: str, base_url_hint: str = "") -> str:
         explicit_slug = os.environ.get("TENANT_SLUG") or os.environ.get("CHASK_TENANT_SLUG")
